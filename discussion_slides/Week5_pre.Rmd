@@ -1,0 +1,403 @@
+---
+title: "disc_week_5"
+author: "Hanying Jiang"
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/xaringan-themer.css", "cols.css"]
+    lib_dir: libs
+    nature:
+      beforeInit: "cols_macro.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "16:9"
+    seal: false  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=F}
+library(knitr)
+library(kableExtra)
+```
+```{r,message = FALSE, warning = FALSE, echo = FALSE}
+library(tidyverse)
+library(agricolae)
+```
+# Week 5
+
+## Today's plan
+ - Try to solve question 3.9 and 3.10 by groups (20 - 25 min).
+ - I'll show you how to solve it.
+ - A quick review
+
+## Main topics
+ - How to implement anova and check its assumptions in R. 
+ - How to use Fisher's LSD to compare pairs of treatments.
+ - How to use Tukey's HSD to compare pairs of treatments.
+---
+
+3.9
+
+The tensile strength of Portland cement is being studied.  Four different mixing techniques can be used economically.  A completely randomized experiment was conducted and the following data were collected.
+
+```{r, echo = FALSE}
+dat = data.frame(Mixing_Technique = c(1,2,3,4),
+                 t1 = c(3129, 3200, 2800, 2600),
+                 t2 = c(3000, 3300, 2900, 2700),
+                 t3 = c(2865, 2975, 2985, 2600),
+                 t4 = c(2890, 3150, 3050, 2765))
+dat %>% kable(col.names = NULL) %>%add_header_above(c("Mixing Technique" = 1, "Tensile strength (lb/in^2)" = 4))
+```
+(a) Test the hypothesis that mixing techniques affect the strength of the cement.  Use $\alpha = 0.05$.
+
+
+(c) Use the Fisher LSD method with α=0.05 to make comparisons between pairs of means.
+
+
+
+(d) Construct a QQ plot of the residuals.  What conclusion would you draw about the validity of the normality assumption?  
+
+
+(e)	Plot the residuals versus the predicted tensile strength.  Comment on the plot.
+
+
+(f)	Prepare a scatter plot of the results to aid the interpretation of the results of this experiment.
+
+(No need to solve (b). And (d) requires constructing QQ plot, which is slightly different from the textbook.)
+
+
+
+3.10 (a)	Rework part (c) of Problem 3.9 using Tukey’s test with α = 0.05.  Do you get the same conclusions from Tukey’s test that you did from the graphical procedure and/or the Fisher LSD method?
+
+3.10 (b)	Explain the difference between the Tukey and Fisher procedures.
+---
+### (a) Test the hypothesis that mixing techniques affect the strength of the cement.  Use $\alpha = 0.05$.
+
+$$
+H_0: \mu_1 = \mu_2 = \mu_3 = \mu_4\\
+$$
+
+$$
+H_A: \mu_i \neq \mu_j \text{ for at least one pair (i, j)}
+$$
+---
+
+### (a) Test the hypothesis that mixing techniques affect the strength of the cement.  Use $\alpha = 0.05$.
+
+```{r}
+dat = data.frame(technique = factor(rep(1:4, 4)), strength = c(3129, 3200, 2800, 2600, 3000, 3300, 2900, 2700, 2865, 2975, 2985, 2600, 2890, 3150, 3050, 2765))
+dat
+```
+
+---
+### (a) Test the hypothesis that mixing techniques affect the strength of the cement.  Use $\alpha = 0.05$.
+
+```{r}
+dat = data.frame(technique = factor(rep(1:4, 4)), strength = c(3129, 3200, 2800, 2600, 3000, 3300, 2900, 2700, 2865, 2975, 2985, 2600, 2890, 3150, 3050, 2765))
+m <- aov(strength ~ technique, data = dat)
+anova(m) 
+```
+
+---
+
+### (c) Use the Fisher LSD method with α=0.05 to make comparisons between pairs of means.
+
+$$
+LSD = t_{\alpha/2,N-a}\sqrt{\frac{2MS_E}{n }}
+$$
+---
+
+(c) Use the Fisher LSD method with α=0.05 to make comparisons between pairs of means.
+
+```{r}
+out <- LSD.test(m, "technique",  alpha = 0.05, p.adj="none")
+# m: model
+# "technique": treatment
+out
+```
+
+---
+(c) Use the Fisher LSD method with α=0.05 to make comparisons between pairs of means.
+
+```{r}
+out <- LSD.test(m, "technique",  alpha = 0.05, p.adj="none")
+# m: model
+# "technique": treatment
+LSD = out$statistics$LSD
+print(paste("LSD = ", LSD,sep = ""))
+```
+
+---
+(c) Use the Fisher LSD method with α=0.05 to make comparisons between pairs of means.
+
+```{r}
+out$groups
+```
+
+Compare the differences between groups with LSD.
+
+```{r,echo = FALSE}
+group_mean = out$groups$strength[order(rownames(out$groups))]
+for (i in 1:3){
+  for(j in (i+1):4){
+    diff = abs(group_mean[j] - group_mean[i])
+    larger = ifelse(diff>LSD,">","<")
+    comparison = sprintf("Treatment %s vs. Treatment %s = |%s - %s| = %s %s %s",j,i, group_mean[j],group_mean[i],diff,larger,LSD)
+    print(comparison)
+    
+  }
+}
+```
+
+---
+(d) Construct a QQ plot of the residuals.  What conclusion would you draw about the validity of the normality assumption?  
+
+```{r}
+qqnorm(resid(m))
+qqline(resid(m), col = "red")
+```
+
+---
+## (e)	Plot the residuals versus the predicted tensile strength.  Comment on the plot.
+Question:  
+ - What assumption is checked by this plot?
+ - What else plot is also used to check this assumption?
+
+---
+
+(e)	Plot the residuals versus the predicted tensile strength.  Comment on the plot.
+
+```{r}
+dat$predicted = predict(m)
+dat$residual = resid(m)
+ggplot(dat) + geom_point(aes(x = predicted, y = residual))
+```
+
+---
+
+(f)	Prepare a scatter plot of the results to aid the interpretation of the results of this experiment.
+
+```{r,echo = FALSE, message=FALSE}
+mean_strength = out$means %>% mutate(technique = 1:4)
+dat %>% ggplot(aes(x = technique, y = strength)) +
+  geom_point() + 
+  geom_segment(aes(x = 1, y = out$means$LCL[1], xend = 1, yend = out$means$UCL[1]), color="red") +
+  geom_segment(aes(x = 2, y = out$means$LCL[2], xend = 2, yend = out$means$UCL[2]), color="red") + 
+  geom_segment(aes(x = 3, y = out$means$LCL[3], xend = 3, yend = out$means$UCL[3]), color="red") + 
+  geom_segment(aes(x = 4, y = out$means$LCL[4], xend = 4, yend = out$means$UCL[4]), color="red") + 
+  geom_line(data=mean_strength,aes(x = technique, y = strength),linetype = "dotted") + geom_point()
+```
+
+---
+
+### 3.10(a)	Rework part (c) of Problem 3.9 using Tukey’s test with α = 0.05.  Do you get the same conclusions from Tukey’s test that you did from the graphical procedure and/or the Fisher LSD method?
+
+$$
+HSD = q_{\alpha}(a,f) \sqrt{\frac{MS_E}{n}}
+$$
+```{r}
+qtukey(0.05, nmeans = 4, df = 12, lower.tail = F)*sqrt(12826/4)
+# a = 4
+# f = df ERROR = N - a = 16 - 4 = 12
+# MSE = 12826
+```
+
+```{r}
+(HSD.test(m, "technique", alpha = 0.05))$statistics$MSD
+```
+
+
+
+
+---
+
+### 3.10(a)	Rework part (c) of Problem 3.9 using Tukey’s test with α = 0.05.  Do you get the same conclusions from Tukey’s test that you did from the graphical procedure and/or the Fisher LSD method?
+
+```{r}
+TukeyHSD(m)
+```
+
+---
+
+```{r}
+TukeyHSD(m)
+```
+
+Fisher LSD method
+
+```{r,echo = FALSE}
+group_mean = out$groups$strength[order(rownames(out$groups))]
+for (i in 1:3){
+  for(j in (i+1):4){
+    diff = abs(group_mean[j] - group_mean[i])
+    larger = ifelse(diff>LSD,">","<")
+    comparison = sprintf("Treatment %s vs. Treatment %s = |%s - %s| = %s %s %s",j,i, group_mean[j],group_mean[i],diff,larger,LSD)
+    print(comparison)
+    
+  }
+}
+```
+
+---
+### Comparison of the conclusion
+
+```{r,echo = FALSE}
+gro = c()
+for (i in 1:3){
+  for(j in (i+1):4){
+    gro = c(gro,sprintf("%s vs. %s",i,j))
+  }
+}
+sig = c("different", "not different")
+fis = sapply(c(1,2,1,1,1,1), FUN = function(x) sig[x])
+tuk = sapply(c(2,2,1,2,1,1), FUN = function(x) sig[x])
+tem = c("same conclusion", "different conclusion")
+comp = sapply(c(2,1,1,2,1,1), FUN = function(x) tem[x])
+compari = data.frame(groups = gro,Fisher = fis, Tukey = tuk, comparison = comp )
+compari %>% kable()
+```
+
+---
+
+## (b)	Explain the difference between the Tukey and Fisher procedures.
+
+$$
+LSD = t_{\alpha/2,N-a}\sqrt{\frac{2MS_E}{n }}
+$$
+
+$$
+HSD = q_{\alpha}(a,f) \sqrt{\frac{MS_E}{n}}
+$$
+
+Both Tukey and Fisher utilize a single critical value; however, Tukey’s is based on the studentized range statistic while Fisher’s is based on $t$ distribution.
+
+Also, Fisher's is based on the distribution of 
+$$
+\frac{\bar{y}_i - \bar{y}_j} {\sqrt{2 MS_E/n}}.
+$$
+
+
+
+
+Tukey's is based on the distribution of 
+
+$$
+\frac{\bar{y}_{max}-\bar{y}_{min}}{\sqrt{MS_E/n}}.
+$$
+
+---
+
+# Review
+
+dat is a two-column data frame. technique is the factor, strength is the observation.
+
+```{r}
+dat = data.frame(technique = factor(rep(1:4, 4)), strength = c(3129, 3200, 2800, 2600, 3000, 3300, 2900, 2700, 2865, 2975, 2985, 2600, 2890, 3150, 3050, 2765)) 
+dat
+```
+
+
+---
+
+### scatter plot for explorary analysis:
+
+```{r, fig.width = 5, fig.height = 4}
+ggplot(dat) + geom_point(aes(x = technique, y = strength) )
+```
+
+---
+
+### ANOVA:
+
+```{r}
+# model
+m <- aov(strength ~ technique, data = dat)
+anova(m) 
+```
+
+---
+
+### Check assumption: normality of errors
+
+
+```{r, fig.width = 5, fig.height = 4}
+# QQ plot of residuals
+qqnorm(resid(m))
+qqline(resid(m), col = "red")
+```
+
+What we expect: a straight line.
+
+---
+
+### Check assumption: equal variance
+
+```{r,eval = FALSE}
+dat$predicted = predict(m)
+dat$residual = resid(m)
+# residual vs. predicted value
+ggplot(dat) + geom_point(aes(x = predicted, y = residual))
+#residuals vs. explanatory variables (factor)
+ggplot(dat) + geom_point(aes(x = technique, y = residual))
+```
+
+.pull-left[
+```{r, fig.width = 5, fig.height = 4, echo=F}
+dat$predicted = predict(m)
+dat$residual = resid(m)
+# residual vs. predicted value
+ggplot(dat) + geom_point(aes(x = predicted, y = residual)) +
+  labs(title = "Residual against fit")
+```
+]
+.pull-right[
+```{r, fig.width = 5, fig.height = 4, echo=F}
+ggplot(dat) + geom_point(aes(x = technique, y = residual)) +
+  labs(title = "Residual against factor")
+```
+]
+
+
+What we expect: no obvious trend.
+
+---
+
+### compare pairs of treatments.
+
+Fisher's LSD:
+
+```{r}
+out <- LSD.test(m, "technique",  alpha = 0.05, p.adj="none")
+LSD = out$statistics$LSD
+LSD
+```
+
+Then: compare with differences between group means. Group means can be found by:
+
+```{r}
+out$groups
+```
+
+---
+
+Tukey's HSD:
+
+```{r}
+out2 <- HSD.test(m, "technique", alpha = 0.05)
+HSD = out2$statistics$MSD
+HSD
+```
+
+Then we can compare it with differences between group means. But we could also use:
+
+```{r}
+TukeyHSD(m)
+```
+
+
+
+
+

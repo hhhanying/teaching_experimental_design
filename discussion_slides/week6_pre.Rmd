@@ -1,0 +1,490 @@
+---
+title: "disc_week_6"
+author: "Hanying Jiang"
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/xaringan-themer.css", "cols.css"]
+    lib_dir: libs
+    nature:
+      beforeInit: "cols_macro.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "16:9"
+    seal: false  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+```
+
+# Week 6
+## Today's plan
+ - Solve question 1 by groups (15 - 20 min).
+ - My explanation
+ - Solve question 1 by groups. (10 - 15 min).
+ - My explanation
+ - A quick review
+
+## Main topics
+ - Linear Contrast.
+ 
+---
+### 1
+Consider a completely randomized design with five treatments, four units per treatment, and treatment means
+
+|   treatment |  sample mean |
+| :---------: | :----------: |
+|           1 |          3.1 |
+|           2 |          9.8 |
+|           3 |          8.1 |
+|           4 |          8.2 |
+|           5 |          7.6 |
+
+
+The MSE is 4.0.
+```{r}
+sampleMeans <- c(3.1, 9.8, 8.1, 8.2, 7.6)
+MSE <- 4.0
+```
+
+(a) Construct an ANOVA table for this experiment and test the null hypothesis that all treatments have the same mean.
+
+(b) Test the null hypothesis that the average response in treatments 1 and 2 is the same as the average response in treatments 3, 4, and 5. Use $\alpha = 0.05$.
+
+(c) Use the HSD procedure to compare the means of the five treatments. Use $\alpha = 0.05$.
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r}
+sampleMeans <- c(3.1, 9.8, 8.1, 8.2, 7.6)
+MSE <- 4.0
+```
+
+(a) Construct an ANOVA table for this experiment and test the null hypothesis that all treatments have the same mean.
+
+```{r, include=T, echo=F}
+source = c('Treatment', 'error', 'total')
+df = c('?', '?', '?')
+ss = c('?', '?', '?')
+ms = c('?', '4.0', '')
+f = c('?', '', '')
+p = c('?', '', '')
+
+kable(noquote(cbind(source, ss, df,  ms, f, p)))
+```
+
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r}
+sampleMeans <- c(3.1, 9.8, 8.1, 8.2, 7.6)
+MSE <- 4.0
+```
+
+(a) Construct an ANOVA table for this experiment and test the null hypothesis that all treatments have the same mean.
+
+$$
+a = 5, n = 4, N = a*n=20
+$$
+$$
+df \; total = N-1=19 
+$$
+$$
+df \; Treatment = a-1=4
+$$
+
+$$
+df \; Error = N-a=15
+$$
+
+$$
+SSE = MSE \times df \; Error = 4.0*15=60
+$$
+
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r}
+sampleMeans <- c(3.1, 9.8, 8.1, 8.2, 7.6)
+MSE <- 4.0
+```
+
+(a) Construct an ANOVA table for this experiment and test the null hypothesis that all treatments have the same mean.
+
+```{r}
+n <- 4 # observations per treatment
+a <- length(sampleMeans)  # 5 recipes
+N <- n*a  # total sample size
+
+dfE <- N - a
+dfTr <- a - 1
+dfT <- N - 1
+
+SSE <- dfE * MSE
+
+c(dfE, dfTr, dfT, SSE)
+```
+
+
+```{r, include=T, echo=F}
+source = c('Treatment', 'error', 'total')
+df = c(4, 15, 19)
+ss = c('?', '60', '?')
+ms = c('?', '4.0', '')
+f = c('?', '', '')
+p = c('?', '', '')
+
+kable(noquote(cbind(source, ss, df,  ms, f, p)))
+```
+
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r}
+sampleMeans <- c(3.1, 9.8, 8.1, 8.2, 7.6)
+MSE <- 4.0
+```
+
+(a) Construct an ANOVA table for this experiment and test the null hypothesis that all treatments have the same mean.
+
+$$
+SS_{Treatment} = n \sum{(\bar{y}_i - \bar{y})^2}
+$$
+```{r}
+SSTr <- n*sum((sampleMeans - mean(sampleMeans))^2)
+
+MSTr <- SSTr / dfTr
+
+SST <- SSTr + SSE
+MST <- SST / dfT
+
+c(SSTr, MSTr, SST, MST)
+```
+
+```{r, include=T, echo=F}
+source = c('Treatment', 'error', 'total')
+df = c(4, 15, 19)
+ss = c(SSTr, SSE, SST)
+ms = c(MSTr, MSE, MST)
+f = c('?', '', '')
+p = c('?', '', '')
+
+kable(data.frame(source, ss, df,  ms, f, p))
+```
+
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r}
+sampleMeans <- c(3.1, 9.8, 8.1, 8.2, 7.6)
+MSE <- 4.0
+```
+
+(a) Construct an ANOVA table for this experiment and test the null hypothesis that all treatments have the same mean.
+
+```{r}
+f <- MSTr / MSE
+p <- pf(f, df1 = a-1, df2 = N-a, lower.tail = F) 
+p <- round(p, 5)
+f
+p
+```
+
+```{r, include=T, echo=F}
+source = c('Treatment', 'error', 'total')
+df = c(4, 15, 19)
+ss = c(SSTr, SSE, SST)
+ms = c(MSTr, MSE, MST)
+f_ = c(as.character(f), '', '')
+p_ = c(as.character(p), '', '')
+aovtable = data.frame(source, ss, df,  ms, f_, p_)
+kable(data.frame(source, ss, df,  ms, f_, p_))
+```
+
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r, include=T, echo=F}
+kable(aovtable)
+```
+
+(b) Test the null hypothesis that the average response in treatments 1 and 2 is the same as the average response in treatments 3, 4, and 5.
+
+---
+
+Consider a completely randomized design with five treatments, four units per treatment
+
+```{r, include=T, echo=F}
+kable(aovtable)
+```
+
+(b) Test the null hypothesis that the average response in treatments 1 and 2 is the same as the average response in treatments 3, 4, and 5.
+
+$$
+H_0: \frac{\mu_1+\mu_2}{2} = \frac{\mu_3+\mu_4+\mu_5}{3} 
+$$
+
+Or 
+
+$$
+H_0: {1 \over  2}\mu_1 + {1 \over  2}\mu_2 - {1 \over  3}\mu_3- {1 \over  3}\mu_4- {1 \over  3}\mu_5 = 0
+$$
+
+$$
+H_A: {1 \over  2}\mu_1 + {1 \over  2}\mu_2 - {1 \over  3}\mu_3- {1 \over  3}\mu_4- {1 \over  3}\mu_5 \neq 0
+$$
+
+Notice
+
+$$
+{1 \over  2} + {1 \over  2} - {1 \over  3}- {1 \over  3}- {1 \over  3}=0
+$$
+
+---
+(b) Test the null hypothesis that the average response in treatments 1 and 2 is the same as the average response in treatments 3, 4, and 5.
+
+$$
+t = \frac{\sum{c_i \bar{y}_i} - 0}{\sqrt{\frac{MSE}{n}\sum{c_i^2}}}
+$$
+
+```{r}
+c1 <- c(1/2, 1/2, -1/3, -1/3, -1/3) # contrast coefficient
+C1 <- sampleMeans %*% c1 # sum(c1_i * y_i bar)
+
+seC1 <- sqrt(MSE/n * sum(c1^2))
+
+t1 <- C1 / seC1
+
+pt(abs(t1), df = N-a, lower.tail = F) * 2
+```
+
+```{r}
+pt(abs(t1), df = N-a, lower.tail = F) * 2 < 0.05
+```
+
+
+---
+
+(c) Use the HSD procedure to compare the means of the five treatments. Use $\alpha = 0.05$.
+
+$$
+HSD = q_{\alpha}(a,f) \sqrt{\frac{MS_E}{n}}
+$$
+
+```{r}
+q <- qtukey(0.05, nmeans = a, df = N-a, lower.tail = F)
+HSD <- q * sqrt(MSE/n)
+HSD
+```
+
+| treatment |sample mean |Gap  |
+|:---------:|:----------:|:---:|
+|         1 |        3.1 |     |
+|         5 |        7.6 | 4.5 |
+|         3 |        8.1 | 0.5 |
+|         4 |        8.2 | 0.1 |
+|         2 |        9.8 | 1.6 |
+|           |            |     |
+
+
+---
+
+### Question 2
+
+The data below give the mass of rotten tomato 4 days after a tomato was subjected to injection of 4 different bacteria treatments.  Treatment 1 is a control (no bacteria injected), Treatment 2 is bacteria type A injected, Treatment 3 is bacteria type B injected, Treatment 4 is both bacteria type A and B injected.
+
+```{r}
+mass <- c(18.9, 18.8, 19.5, 21.3, 18.7, 19.2, 19.9, 21.1)
+treatment <- factor(rep(1:4, times = 2))
+dat <- data.frame(treatment, mass)
+head(dat)
+```
+
+Test the hypotheses corresponding to the following contrasts with the following coefficients:
+
+- C1: 1, 1, -1, -1
+- C2: 1, -1, 1, -1
+- C3: 1, -1, -1, 1
+
+Interpret the results in the context of the problem.
+
+---
+
+First, define the contrast:
+
+```{r}
+contrasts <- matrix(c(1, 1, -1, -1, 
+                      1, -1, 1, -1,
+                      1, -1, -1, 1), byrow = T, nrow =3)
+contrasts
+```
+Notice that every row is a contrast. byrow determins the order we fill the number into the matrix. nrow determines the shape of the matrix.
+
+---
+
+```{r}
+library(gmodels)
+fit <- aov(mass ~ treatment, data = dat)
+
+# fit.contrast(model, varname, coefficients, confidence level)
+fit.contrast(fit, "treatment", contrasts, conf.int = 0.95)
+
+```
+
+---
+
+| treatment | bacteria A | bacteria B |
+|:---------:|:----------:|:----------:|
+|    1      |     No     |     No     |
+|    2      |    Yes     |     No     |
+|    3      |     No     |    Yes     |
+|    4      |    Yes     |    Yes     |
+
+C1:  
+
+Coefficients: 1, 1, -1, -1
+
+Hypothesis tested:
+
+$$
+H_0: \mu_1 + \mu_2 = \mu_3 + \mu_4
+$$
+
+Interpretation: C1 is a contrast that tests whether there is a difference in the average rot of tomatoes treated with bacteria B compared to those not treated with bacteria B.
+
+p-value = 0.0006
+
+Conclusion: we have strong evidence that there existes difference in the average rot of tomatoes treated with bacteria B compared to those not treated with bacteria B.
+
+---
+
+| treatment | bacteria A | bacteria B |
+|:---------:|:----------:|:----------:|
+|    1      |     No     |     No     |
+|    2      |    Yes     |     No     |
+|    3      |     No     |    Yes     |
+|    4      |    Yes     |    Yes     |
+
+C2:  
+
+Coefficients: 1, -1, 1, -1
+
+Hypothesis tested:
+
+$$
+H_0: \mu_1 + \mu_3 = \mu_2 + \mu_4
+$$
+
+Interpretation: C2 is a contrast that tests whether there is a difference in the average rot of tomatoes treated with bacteria A compared to those not treated with bacteria A.
+
+p-value = 0.0060
+
+Conclusion: we have strong evidence that there existes difference in the average rot of tomatoes treated with bacteria A compared to those not treated with bacteria A.
+
+---
+
+
+| treatment | bacteria A | bacteria B |
+|:---------:|:----------:|:----------:|
+|    1      |     No     |     No     |
+|    2      |    Yes     |     No     |
+|    3      |     No     |    Yes     |
+|    4      |    Yes     |    Yes     |
+
+C3:  
+
+Coefficients: 1, -1, -1, 1
+
+Hypothesis tested:
+
+$$
+H_0: \mu_1 - \mu_2 = \mu_3 - \mu_4
+$$
+and also can be written:
+$$
+H_0: \mu_4 - \mu_2 = \mu_3 - \mu_1
+$$
+Interpretation: C3 is a contrast that tests whether the effect of bacteria B depends on whether bacteria A is also present.  Equivalently, it tests whether the effect of bacteria A depends on whether bacteria B is also present.
+
+
+p-value = 0.014
+
+Conclusion: we have evidence that the effect of bacteria B depends on whether bacteria A is also present. Equivalently, it tests whether the effect of bacteria A depends on whether bacteria B is also present.
+
+---
+
+# quick review
+
+What is a contrast?
+
+$$
+\sum_ i ^ a {c_i \mu_i}, \, where \, \sum_i^a {c_i} = 0.
+$$
+---
+
+T test
+
+$$
+H_0: \sum_i^a c_i\mu_i = \mu_c^0  \text{ vs. } H_A: \sum_i^a c_i\mu_i \neq \mu_c^0
+$$
+
+Test statistic:
+
+$$
+t_0 = \frac{\sum{c_i \bar{y}_i} - \mu_c^0}{\sqrt{\frac{MSE}{n} \sum{c_i^2}}}
+$$
+
+If $H_0$ is true, $t_0 \sim t_{N-a}$.
+
+How to perform in R:
+
+```{r, eval = FALSE}
+# Assume your data is saved in a data frame named as dat
+# dat has two columns: treatment stores the treatment types and measurements stores the outcomes
+# Make sure treatment is factor!!! If it's not, try:
+# dat$treatment = factor(dat$treatment )
+
+# If you only test one contrast, variable contrasts can be a vector which stores the coefficients
+# If you are testing multiple contrasts at the same time, construct a variable contrasts, which is a matrix whose each row is the coefficients for one constrast
+
+library(gmodels)
+fit <- aov(measurements ~ treatment, data = dat)
+fit.contrast(fit, "treatment", contrasts, conf.int = 0.95)
+```
+
+
+---
+
+F test
+
+$$
+H_0: \sum_i^a c_i\mu_i = 0  \text{ vs. } H_A: \sum_i^a c_i\mu_i \neq 0
+$$
+Test statistic:
+
+$$
+F = \frac{SS_C/1}{MSE}= \frac{(\sum{c_i \bar{y}_i})^2}{\frac{1}{n} \sum{c_i^2}MSE}
+$$
+
+Compare with t:
+
+$$
+t_0 = \frac{\sum{c_i \bar{y}_i}}{\sqrt{\frac{MSE}{n} \sum{c_i^2}}}
+$$
+
+We can see $F=t_0^2$. And these two tests will give the same conclusion.
+
+---
+
+Pay attention to the computation.
+
+
+
