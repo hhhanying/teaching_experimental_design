@@ -1,0 +1,234 @@
+---
+
+title: disc_week_9
+author: Hanying Jiang
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/xaringan-themer.css", "cols.css"]
+    lib_dir: libs
+    nature:
+      titleSlideClass: ["right", "top", "my-title"]
+      beforeInit: "cols_macro.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "16:9"
+     
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, echo = FALSE}
+library(knitr)
+```
+
+# Week 9
+
+## Today's plan
+
+ - Try to solve question 5.15.
+ - Go through the solution.
+ - Try to solve question 5.25.
+ - Go through the solution.
+
+---
+
+# 5.15
+
+An experiment was conducted to determine if either firing temperature or furnace position affects the baked density of a carbon anode.  The data are shown below. Suppose we assume that no interaction exists.  Write down the statistical model.  Conduct the analysis of variance and test hypotheses on the main effects.  What conclusions can be drawn?  Comment on the model’s adequacy.  
+Assume the interaction exists and fit the model. Create an interaction plot.  
+(Data can be found in the rmd file.)
+```{r, echo = FALSE}
+dat15 <- data.frame(Position = factor(rep(1:2, each = 3)),
+                  Temperature_800 = c(570, 565, 583, 528, 547, 521),
+                  Temperature_825 = c(1063, 1080, 1043, 988, 1026, 1004),
+                  Temperature_850 = c(565, 510, 590, 526, 538, 532))
+kable(dat15)
+```
+
+---
+
+#### 1. change the format of data
+
+```{r}
+library(tidyr)
+dat15 <- pivot_longer(dat15, 
+                      cols = !Position,
+                      names_to = "Temperature",
+                      values_to = "density"
+                      )
+head(dat15)
+```
+---
+#### 2. Interaction plot
+```{r, fig.height = 5, fig.width = 5}
+interaction.plot(x.factor = dat15$Temperature,  # x axis
+                 trace.factor = dat15$Position, # variable for each line
+                 response = dat15$density, # y axis
+                 fun = median, #metric to plot
+                 ylab = "density",
+                 xlab = "temperature",
+                 col = c("red", "blue"),
+                 trace.label = "position")
+```
+
+---
+
+#### 3. No interaction
+
+The model is $$y_{ijk} = \mu + \tau_i + \beta_j + \epsilon_{ijk}.$$
+```{r}
+fit1 <- aov(density ~ Position + Temperature, data = dat15)
+anova(fit1)
+```
+
+Conclusion: we have strong evidence that both position and temperature are significant.
+
+---
+
+```{r}
+plot(fit1, which = 1:2)
+```
+
+---
+```{r, eval = FALSE}
+library(ggplot2)
+dat15$residuals <- resid(fit1)
+ggplot(dat15, aes(x = Position, y = residuals)) + geom_point()
+ggplot(dat15, aes(x = Temperature, y = residuals)) + geom_point()
+```
+
+```{r, echo = FALSE, fig.height = 5, fig.width = 5}
+library(ggplot2)
+library(gridExtra)
+dat15$residuals <- resid(fit1)
+p1 <- ggplot(dat15, aes(x = Position, y = residuals)) + geom_point()
+p2 <- ggplot(dat15, aes(x = Temperature, y = residuals)) + geom_point()
+grid.arrange(grobs = list(p1, p2), ncol = 2)
+```
+
+Conclusion: other than the residual of 6th point being marginally low, the residual plots show nothing unusual.
+
+---
+
+#### 4. Consider interaction
+```{r}
+fit2 <- aov(density ~ Position * Temperature, data = dat15)
+anova(fit2)
+```
+From the anova table, interaction is not significant. This agrees with the observation from the interaction plot below:
+
+---
+# 5.25
+An article in the Journal of Testing and Evaluation (Vol. 16, no.2, pp. 508-515) investigated the effects of cyclic loading and environmental conditions on fatigue crack growth at a constant 22 MPa stress for a particular material.  The data from this experiment are shown below (the response is crack growth rate). 
+
+
+(a)	Analyze the data from this experiment (use α = 0.05). Create an an interaction plot.
+
+(b)	Analyze the residuals.
+
+(c)	Repeat the analyses from parts (a) and (b) using ln(y) as the response.  Comment on the results.
+
+```{r, echo = FALSE}
+dat25 <- data.frame(Frequency = factor(rep(c(10, 1, 0.1), each = 4)),
+                    Air = c(2.29, 2.47, 2.48, 2.12, 2.65, 2.68, 2.06, 2.38, 2.24, 2.71, 2.81, 2.08),
+                    H2O = c(2.06, 2.05, 2.23, 2.03, 3.20, 3.18, 3.96, 3.64, 11.00, 11.00, 9.06, 11.30),
+                    Salt_H2O = c(1.9, 1.93, 1.75, 2.06, 3.1, 3.24, 3.98, 3.24, 9.96, 10.01, 9.36, 10.4))
+kable(dat25)
+```
+
+---
+
+(a)	Analyze the data from this experiment (use α = 0.05). Create an an interaction plot.
+
+```{r}
+dat25 <- pivot_longer(dat25,
+                      cols = !Frequency,
+                      names_to = "Environment",
+                      values_to = "rate")
+head(dat25)
+```
+
+---
+
+```{r, fig.height = 5, fig.width = 5}
+interaction.plot(x.factor = dat25$Environment, 
+                 trace.factor = dat25$Frequency,
+                 response = dat25$rate, 
+                 fun = median,
+                 ylab = "Crack growth rate",
+                 xlab = "Environment",
+                 col = c("red", "blue", 'yellow'),
+                 trace.label = "Frequency")
+```
+
+Based on the interaction plot, we will consider interaction.
+
+---
+
+```{r}
+fit3 <- lm(rate ~ Environment * Frequency, data = dat25)
+anova(fit3)
+```
+
+Both frequency and environment, as well as their interaction are significant.
+
+---
+(b)	Analyze the residuals.
+
+```{r}
+plot(fit3, which = 1:2)
+```
+
+---
+
+```{r, eval = FALSE}
+dat25$Residuals <- resid(fit3)
+ggplot(dat25, aes(x = Environment, y = Residuals)) + geom_point()
+ggplot(dat25, aes(x = Frequency, y = Residuals)) + geom_point()
+```
+
+```{r, echo = FALSE, fig.height = 5, fig.width = 5}
+dat25$Residuals <- resid(fit3)
+p1 <- ggplot(dat25, aes(x = Environment, y = Residuals)) + geom_point()
+p2 <- ggplot(dat25, aes(x = Frequency, y = Residuals)) + geom_point()
+grid.arrange(grobs = list(p1, p2), ncol = 2)
+```
+
+The residual plots indicate that there may be some problem with inequality of variance.  This is particularly noticeable on the plot of residuals versus predicted response and the plot of residuals versus frequency. 
+
+---
+
+(c)	Repeat the analyses from parts (a) and (b) using ln(y) as the response.  Comment on the results.
+
+```{r}
+fit4 <- lm(log(rate) ~ Environment * Frequency, data = dat25)
+anova(fit4)
+```
+
+Both frequency and environment, as well as their interaction are still significant. 
+---
+
+```{r}
+plot(fit4, which = 1:2)
+```
+
+---
+
+```{r, eval = FALSE}
+dat25$Residuals_ln <- resid(fit4)
+ggplot(dat25, aes(x = Environment, y = Residuals_ln)) + geom_point()
+ggplot(dat25, aes(x = Frequency, y = Residuals_ln)) + geom_point()
+```
+
+```{r, echo = FALSE, fig.height = 5, fig.width = 5}
+dat25$Residuals_ln <- resid(fit4)
+p1 <- ggplot(dat25, aes(x = Environment, y = Residuals_ln)) + geom_point()
+p2 <- ggplot(dat25, aes(x = Frequency, y = Residuals_ln)) + geom_point()
+
+grid.arrange(grobs = list(p1, p2), ncol = 2)
+```
+
+The residual plots based on the transformed data look better.

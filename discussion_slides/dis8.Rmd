@@ -1,0 +1,362 @@
+---
+
+title: disc_week_8
+author: Hanying Jiang
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/xaringan-themer.css", "cols.css"]
+    lib_dir: libs
+    nature:
+      titleSlideClass: ["right", "top", "my-title"]
+      beforeInit: "cols_macro.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "16:9"
+     
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, echo = FALSE}
+library(knitr)
+```
+
+# Week 8
+
+## Today's plan
+
+ - Try to solve question 5.6.
+ - Go through the solution.
+ - Try to solve question 5.10.
+ - Go through the solution.
+ - Quick review.
+
+
+---
+
+# 5.6
+
+The following output was obtained from a computer program that performed a two-factor ANOVA on a factorial experiment.
+
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(     'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(     '1',       '?',           '3',       '8',      '15'),
+  SS     = c(     '?', '180.378',       '8.479', '158.797', '347.6542'),
+  MS     = c('0.0002',       '?',           '?',       '?',        ''),
+  F      = c(     '?',       '?',           '?',        '',        ''),
+  P      = c(     '?',       '?',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+(a)	Fill in the blanks in the ANOVA table.  You can use bounds on the P-values.  
+(Notice SStotcl changes to 347.6542.)
+
+(b)	How many levels were used for factor B?
+
+(c)	How many replicates of the experiment were performed?
+
+(d)	What conclusions would you draw about this experiment?
+
+---
+
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(     'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(     '1',       '?',           '3',       '8',      '15'),
+  SS     = c(     '?', '180.378',       '8.479', '158.797', '347.6542'),
+  MS     = c('0.0002',       '?',           '?',       '?',        ''),
+  F      = c(     '?',       '?',           '?',        '',        ''),
+  P      = c(     '?',       '?',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+(a)	Fill in the blanks in the ANOVA table.  You can use bounds on the P-values.
+
+dfA + dfB + dfInteraction + dfError = dfTotal  
+
+dfB = dfTotal - dfA - dfInteraction - dfError
+
+```{r}
+dfB = 15 - 8 - 3 - 1; dfB
+```
+
+SSA + SSB + SSInteraction + SSError = SSTotal
+
+SSA =  SSTotal - SSB - SSInteraction - SSError
+
+```{r}
+SSA = 347.6542 - 158.797 - 8.479 - 180.378; SSA
+```
+
+---
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(     'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(     '1',       '3',           '3',       '8',      '15'),
+  SS     = c(     '0.0002.', '180.378',       '8.479', '158.797', '347.653'),
+  MS     = c('0.0002',       '?',           '?',       '?',        ''),
+  F      = c(     '?',       '?',           '?',        '',        ''),
+  P      = c(     '?',       '?',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+SSx / dfx = MSx
+
+```{r}
+MSB = 180.378 / dfB
+MSInter = 8.479 / 3
+MSErr = 158.797 / 8
+c(MSB, MSInter, MSErr)
+```
+---
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(      'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(      '1',       '3',           '3',       '8',      '15'),
+  SS     = c( '0.0001', '180.378',       '8.479', '158.797', '347.653'),
+  MS     = c( '0.0002',  '60.126',       '2.826',  '19.850',        ''),
+  F      = c(     '?',       '?',           '?',        '',        ''),
+  P      = c(     '?',       '?',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+Fx = MSx / MSErr 
+
+```{r}
+FA = 0.0002 / MSErr
+FB = MSB / MSErr
+FInter = MSInter / MSErr
+c(FA, FB, FInter)
+```
+
+Px = p(Fx, dfx, dfErr, lower.tail=F)
+
+```{r}
+PA = 1 - pf(FA, 1, 8)
+PB = 1 - pf(FB, 3, 8)
+PInter = 1 - pf(FInter, 3, 8)
+c(PA, PB, PInter)
+```
+
+---
+
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(      'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(      '1',       '3',           '3',       '8',      '15'),
+  SS     = c( '0.0001', '180.378',       '8.479', '158.797', '347.653'),
+  MS     = c( '0.0002',  '60.126',       '2.826',  '19.850',        ''),
+  F      = c('0.00001',   '3.029',       '0.142',        '',        ''),
+  P      = c(  '0.998',   '0.093',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+---
+
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(      'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(      '1',       '3',           '3',       '8',      '15'),
+  SS     = c( '0.0001', '180.378',       '8.479', '158.797', '347.653'),
+  MS     = c( '0.0002',  '60.126',       '2.826',  '19.850',        ''),
+  F      = c('0.00001',   '3.029',       '0.142',        '',        ''),
+  P      = c(  '0.998',   '0.093',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+
+(b)	How many levels were used for factor B?
+
+number of levels = df + 1.
+
+number of levels for factor B = dfB + 1 = 3 + 1 = 4.
+
+(c)	How many replicates of the experiment were performed?  
+number of levels for factor A = dfA + 1 = 1 + 1 = 2.  
+number of levels for factor B = dfB + 1 = 3 + 1 = 4.  
+number of design: 2x4 = 8.  
+number of observations: dfTotal + 1 = 15 + 1 = 16.  
+Therefore, there were 16 / 8 = 2 replicates for each combination of factors.
+
+---
+
+```{r, echo=FALSE}
+anova_56 = data.frame(
+  Source = c(      'A',       'B', 'Interaction',   'Error',   'Total'),
+  DF     = c(      '1',       '3',           '3',       '8',      '15'),
+  SS     = c( '0.0001', '180.378',       '8.479', '158.797', '347.653'),
+  MS     = c( '0.0002',  '60.126',       '2.826',  '19.850',        ''),
+  F      = c('0.00001',   '3.029',       '0.142',        '',        ''),
+  P      = c(  '0.998',   '0.093',       '0.932',        '',        '')
+)
+kable(anova_56, row.names=F, caption = 'Two-way ANOVA: y versus A,B', align='r')
+```
+
+(d)	What conclusions would you draw about this experiment?
+
+Factor B is weakly significant with a P-value of 0.093.  Factor A and the two-factor interaction are not significant.
+
+---
+
+# 5.10
+
+An article in Industrial Quality Control (1956, pp. 5-8) describes an experiment to investigate the effect of the type of glass and the type of phosphor on the brightness of a television tube.  The response variable is the current necessary (in microamps) to obtain a specified brightness level.  The data are as follows:
+
+```{r, echo = FALSE}
+brightness = data.frame(
+  glass_type = factor(rep(c(1,2), each=3)),
+  phosphor_type_1 = c(280, 290, 285, 230, 235, 240),
+  phosphor_type_2 = c(300, 310, 295, 260, 240, 235),
+  phosphor_type_3 = c(290, 285, 290, 220, 225, 230)
+)
+kable(brightness)
+```
+
+(a) Is there any indication that either factor influences brightness? Use $\alpha=0.05$.
+
+(b) Do the two factors interact?  Use $\alpha = 0.05$.
+
+(c) Analyze the residuals from this experiment.
+
+---
+
+```{r, echo = FALSE}
+brightness = data.frame(
+  glass_type = factor(rep(c(1,2), each=3)),
+  phosphor_type_1 = c(280, 290, 285, 230, 235, 240),
+  phosphor_type_2 = c(300, 310, 295, 260, 240, 235),
+  phosphor_type_3 = c(290, 285, 290, 220, 225, 230)
+)
+kable(brightness)
+```
+
+(a) Is there any indication that either factor influences brightness? Use $\alpha=0.05$.
+
+```{r}
+library(tidyr)
+brightness2 = pivot_longer(
+  data = brightness,
+  cols = starts_with('phosphor_type_'), # columns we want to pivot to long format
+  names_prefix = 'phosphor_type_', #remove matching text from the start of each variable name   
+  names_to = 'phosphor_type', # column to store the column names
+  names_ptypes = factor(), # data type 
+  values_to = 'brightness'
+)
+```
+
+---
+```{r}
+head(brightness2)
+```
+```{r}
+fit1 = aov(brightness ~ glass_type + phosphor_type, data=brightness2)
+anova(fit1)
+```
+
+Even without accounting for the possibility of an interaction, we have evidence
+that both glass type and phosphor type affect brightness, because $p_{\text{glass}}$
+and $p_{\text{phosphor}}$ are both $< 0.05$.  Both effects are significant
+at $\alpha=0.05$.
+
+---
+(b) Do the two factors interact?  Use $\alpha = 0.05$.
+
+```{r}
+fit2 = aov(brightness ~ glass_type * phosphor_type, data=brightness2)
+anova(fit2)
+```
+
+Accounting for the possibility of an interaction, there is little evidence that
+it exists, because $p_{\text{glass * phosphor}} \approx 0.318 > 0.05$.
+
+---
+
+(c) Analyze the residuals from this experiment.
+
+I'll focus on the residuals from the final (interaction) model.
+
+```{r,fig.height = 3, fig.width = 3}
+plot(fit2)
+```
+
+There is no consistent tendency for the residual spread to increase or decrease as fitted values increase, but the residual spread may not be the same for all fitted values. Therefore, the equal variance assumption may not be satisfied. 
+
+The points of the QQ plot lie about on the 45 degree line. Therefore, the normally-distributed errors assumption may be satisfied.
+
+---
+
+Residuals against each factor:
+
+```{r,fig.height = 5, fig.width = 5, echo = FALSE}
+plot(x=brightness2$glass_type,    y=fit2$residuals, xlab = "glass_type")
+plot(x=brightness2$phosphor_type, y=fit2$residuals, xlab = "phosphor_type")
+```
+
+To my eye, there may be greater variance for phosphor type 2 and maybe glass type 2.
+
+A more sophisticated analysis might consider how to correct for this problem.
+
+
+---
+# Quick review
+
+### design we have learned
+
+ - One-way anova
+ - RCBD
+ - Factorial design
+ 
+---
+
+### anova table
+
+#### how to construct anova table
+Example: given an incomplete anova table, how to fill in the blanks?  
+You need to be familiar with the definitions of and relationships between the statistics in the table.  
+
+Useful relations and definitions:
+
+ - df Total = df Factor + df Error + df block (if appliable) + df interaction (if appliable) (Same for SS.)
+ - MSx = SSx / dfx, where x can be factor, error, interaction, block.
+ - Fx = MSx / MSE.
+ - df factor = number of levels for this factor - 1
+ - df Total = number of results - 1
+ - number of results = (number of factor or number combinations of factors) * number of replicates.
+
+---
+
+### anova table
+
+#### how to read the anova table
+Example: given the anova table, what conclusion can you draw?
+
+Use the appropriate p value to draw conclusion about the question we want to investigate.
+
+#### further analysis: pairwise comparison of treatments
+Example: given the MSE, quantiles of t/tukey distribution and all other necessary information, calculate the Fisher's LSD or Tukey's HSD.
+
+We need to know the definition of LSD and HSD. If we ask you to compute them, we will probably provide the needed statistics and quantites. You are supposed to know how to pluug them in the formula.  
+
+---
+
+### model diagnostics
+Example: given the plots, what conclusion can you draw?  
+
+QQ plot of residuals: used to check the normality assumption.
+
+Residual plots (residuals against fitted value / treatment): check the equal variance assumption.
+
+First describe your observation, then conclude whether the assumption is violated.
+
+
+
+
