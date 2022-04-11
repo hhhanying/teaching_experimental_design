@@ -1,0 +1,217 @@
+---
+
+title: disc_week_11
+author: Hanying Jiang
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/xaringan-themer.css", "cols.css"]
+    lib_dir: libs
+    nature:
+      titleSlideClass: ["right", "top", "my-title"]
+      beforeInit: "cols_macro.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "16:9"
+     
+---
+
+
+# Week 11
+
+## Today's plan
+
+- Try to solve 6.5 and 6.6.
+- Go through solution.
+
+## Main goal
+
+- Know how to calculate the effect and confuct the test manually
+
+---
+
+6.5 An engineer is interested in the effects of cutting speed (A), tool geometry (B), and cutting angle on the life (in hours) of a machine tool.  Two levels of each factor are chosen, and three replicates of a 23 factorial design are run.  The results are as follows:
+```{r, echo = FALSE}
+library(knitr)
+data1 <-data.frame(
+  A = rep(c(-1,1),times = 4),
+  B = rep(rep(c(-1,1),each = 2), times = 2),
+  C = rep(c(-1,1), each = 4),
+  label = c("1","a","b","ab","c","ac","bc","abc"),
+  I = c(22,32,35,55,44,40,60,39),
+  II = c(31,43,34,47,45,37,50,41),
+  III = c(25,29,50,46,38,36,54,47)
+)
+kable(data1)
+```
+For question (a) and (b), try to conduct the test without using the built-in function in R. (So, don't use anova or lm, but you can use R to help the calculation.)
+
+(a)	Estimate the factor effects.  Which effects appear to be large?
+
+(b)	Use the analysis of variance to confirm your conclusions for part (a). 
+
+(c)	Write down a regression model for predicting tool life (in hours) based on the results of this experiment.
+
+(d)	Analyze the residuals.  Are there any obvious problems?  
+
+(e)	Based on the analysis of main effects and interaction plots, what levels of A, B, and C would you recommend using?
+
+6.6.	Reconsider part (c) of Problem 6.5S.  Use the regression model to generate response surface and contour plots of the tool life response.  Interpret these plots.  Do they provide insight regarding the desirable operating conditions for this process?
+
+---
+
+(a)	Estimate the factor effects.  Which effects appear to be large?
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+data1<-data1%>%
+  pivot_longer(cols = c(I,II,III),names_to = "replicates", values_to = "life_hour")
+head(data1)
+```
+
+---
+
+$$A = \bar{y}_{A^+} - \bar{y}_{A^-} = \frac{abc+ab+ac+a-bc-b-c-(1)}{4n}$$
+
+```{r}
+sum(data1$A * data1$life_hour) / (4 * 3)
+sum(data1$B * data1$life_hour) / (4 * 3)
+sum(data1$C * data1$life_hour) / (4 * 3)
+```
+
+
+---
+
+$$AB = \frac{abc + ab + (1) + c -ac-bc-a-b}{4n}$$
+
+```{r}
+sum(data1$A * data1$B * data1$life_hour) / (4 * 3)
+sum(data1$B * data1$C * data1$life_hour) / (4 * 3)
+sum(data1$A * data1$C * data1$life_hour) / (4 * 3)
+```
+
+---
+
+$$ABC = \frac{abd -bc-ac+c-ab+b+a-(1)}{4n}$$
+
+```{r}
+sum(data1$A * data1$B * data1$C * data1$life_hour) / (4 * 3)
+```
+
+
+---
+
+```{r, echo = FALSE}
+fit1<-lm(life_hour ~ A*B*C, data = data1)
+effe <- data.frame(label = names(fit1$coefficients[-1]), factor_effects = 2*fit1$coefficients[-1], row.names = NULL)%>%
+  arrange(abs(factor_effects))
+effect = effe
+```
+```{r}
+effect
+```
+
+
+---
+
+```{r, echo = FALSE}
+effect_plot <- function(effects, p = c(0.2, 0.8)) { 
+  qq <- qqnorm(effects, datax = TRUE)
+  qqline(effects, col = "red", probs = p, datax = TRUE)
+  text(qq$x, qq$y, names(effects), pos=4)
+}
+effect_plot(fit1$coefficients[-1])
+
+
+```
+B,C,AC interaction appear to be significant.
+
+---
+
+(b)	Use the analysis of variance to confirm your conclusions for part (a). Try to conduct the test without using the built-in function in R.
+
+```{r}
+effect
+effect$df <- rep(1, 7)
+effect$SS <- (effect$factor_effects ** 2) * (2 * 3)
+effect$MS <- effect$SS / effect$df
+effect
+```
+
+---
+
+```{r}
+SST <- sum((data1$life_hour - mean(data1$life_hour))**2)
+SSE <- SST - sum(effect$SS)
+SSE
+```
+```{r}
+dfT <- 2 ** 3 * 3 - 1
+dfE <- dfT - sum(effect$df)
+dfE
+MSE <- SSE / dfE
+MSE
+```
+
+---
+
+```{r}
+effect$F <- effect$MS / MSE
+effect$p <- pf(effect$F, 1, dfE, lower.tail = FALSE)
+effect[, c("label", "MS", "F", "p")]
+```
+
+The analysis of variance confirms the significance of factors B, C, and the AC interaction.
+
+---
+(c)	Write down a regression model for predicting tool life (in hours) based on the results of this experiment.
+```{r}
+fit3<-lm(life_hour~A + B +C +A:C, data = data1)
+summary(fit3)
+```
+
+The equation in part (c) and in the given in the computer output form a “hierarchical” model, that is, if an interaction is included in the model, then all of the main effects referenced in the interaction are also included in the model. B:C and A:B could be excluded from model while keeping A:C
+
+---
+(d)	Analyze the residuals.  Are there any obvious problems?  
+
+```{r}
+data1<-data1%>%mutate(residual = fit3$residuals,fit.val = fit3$fitted.values)
+data1%>%ggplot(aes(sample = residual))+geom_qq()+geom_qq_line()
+```
+
+---
+
+```{r}
+data1%>%ggplot(aes(x = fit.val, y = residual))+ geom_point()
+```
+
+There is nothing unusual about the residual plots.
+
+---
+(e)	Based on the analysis of main effects and interaction plots, what levels of A, B, and C would you recommend using?
+
+Since B has a positive effect, set B at the high level to increase life.  The AC interaction plot reveals that life would be maximized with C at the high level and A at the low level.
+
+```{r, echo = FALSE, warning=FALSE, message=FALSE, out.height=400}
+data1%>%
+  group_by(factor(A),factor(C))%>%
+  summarize(mean = mean(life_hour))%>%
+  arrange(mean)%>%ggplot(aes(x = `factor(A)`, y = mean))+geom_point(aes(color = `factor(C)`,shape = `factor(C)`)) + geom_line(aes(group = `factor(C)`,linetype = `factor(C)`))
+
+```
+
+---
+
+6.6.	Reconsider part (c) of Problem 6.5S.  Use the regression model to generate response surface and contour plots of the tool life response.  Interpret these plots.  Do they provide insight regarding the desirable operating conditions for this process?
+
+```{r, out.width=300}
+nd <- expand.grid(A = seq(from = -1, to = 1, by = .1),
+                  C = seq(from = -1, to = 1, by = .1),
+                  B = c(-1, 1))
+
+nd$predTDS <- predict(fit3, newdata = nd)
+ggplot(data = nd, aes(x = A, y = C, z = predTDS)) + facet_wrap(~B) + geom_contour_filled()
+```
+
+The response surface plot and the contour plot in terms of factors A and C with B at the high level are shown below.  They show the curvature due to the AC interaction.  These plots make it easy to see the region of greatest tool life.
