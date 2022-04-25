@@ -1,0 +1,233 @@
+---
+
+title: disc_week_12
+author: Hanying Jiang
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/xaringan-themer.css", "cols.css"]
+    lib_dir: libs
+    nature:
+      titleSlideClass: ["right", "top", "my-title"]
+      beforeInit: "cols_macro.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "16:9"
+     
+---
+
+#### 6.24
+
+An experiment was run in a semiconductor fabrication plant in an effort to increase yield.  Five factors, each at two levels, were studied.  The factors (and levels) were A = aperture setting (small, large), B = exposure time (20% below nominal, 20% above nominal), C = development time (30 s, 45 s), D = mask dimension (small, large), and E = etch time (14.5 min, 15.5 min).  The unreplicated 25 design was run. Results are saved in data1.csv.
+
+(a)	Construct a normal probability plot of the effect estimates.  Which effects appear to be large?
+
+(b)	Fit the model that includes only the terms you think are different than zero from (a). Conduct an analysis of variance to confirm your findings for part (a).
+
+(c)	Write down the regression model relating yield to the significant process variables.
+
+(d)	Plot the residuals on normal probability paper.  Is the plot satisfactory?
+
+(e)	Plot the residuals versus the predicted yields and versus each of the five factors. Comment on the plots.
+
+(f)	Interpret any significant interactions.
+
+(g)	What are your recommendations regarding process operating conditions?
+
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+data1 <- read.csv("data1.csv")
+head(data1)
+```
+
+---
+
+Encode the factor level by -1 and 1:
+
+```{r}
+library(tidyverse)
+data1 <- read.csv("data1.csv")
+data1 <- data1 %>% mutate(
+  A = ifelse(Aperture == "small", -1, 1),
+  B = ifelse(Exposure.Time == -20, -1, 1),
+  C = ifelse(Develop.Time == 30, -1, 1),
+  D = ifelse(Mask.Dimension == "Small", -1, 1),
+  E = ifelse(Etch.Time == 14.5, -1, 1)
+)
+head(data1)
+```
+
+
+---
+
+```{r}
+m <- lm(Yield ~ A * B * C * D * E, data = data1)
+effects <- 2 * coef(m)[-1]
+
+daniel_plot <- function(effects, p = c(0.3, 0.7)) { 
+  qq <- qqnorm(effects, datax = TRUE)
+  qqline(effects, col = "red", probs = p, datax = TRUE)
+  text(qq$x, qq$y, names(effects), pos=1)
+}
+daniel_plot(effects)
+```
+
+From the normal probability plot of effects shown below, effects A, B, C, and the AB interaction appear to be large.
+
+---
+
+(b)	Fit the model that includes only the terms you think are different than zero from (a). Conduct an analysis of variance to confirm your findings for part (a).
+
+```{r}
+m2 <- lm(Yield ~ Aperture + Exposure.Time + Develop.Time + Aperture*Exposure.Time, data = data1)
+anova(m2)
+```
+
+Effects A, B, C, and the AB interaction are significant, which agrees with the conclusion in (a).
+
+---
+
+(c)	Write down the regression model relating yield to the significant process variables.
+
+```{r}
+coef(m2)
+```
+
+The model is
+$$
+\begin{aligned}
+Yield = &12.2187500 - 11.8125000*I(Aperture = small) + 1.0468750 *Exposure.Time \\
+&-0.3968750 *I(Aperture = small) *Exposure.Time + 0.6458333*Develop.Time
+\end{aligned}
+$$
+
+When aperture is small, the model can be simplified as:
+$$
+\begin{aligned}
+ Yield &= 12.2187500  -11.8125000 + 1.0468750 *Exposure.Time -0.3968750 *Exposure.Time +  0.6458333*Develop.Time\\
+ &=0.40625+0.6500*Exposure.Time+0.6458333*Develop.Time
+\end{aligned}
+$$
+
+When aperture is large, the model can be simplified as:
+
+$$
+Yield = 12.2187500  +1.0468750 *Exposure.Time  +  0.6458333*Develop.Time
+$$
+
+
+---
+
+(d)	Plot the residuals on normal probability paper.  Is the plot satisfactory?
+
+```{r, echo = FALSE}
+plot(m2, which = 2)
+```
+
+There is nothing unusual about this plot.
+
+
+---
+
+(e)	Plot the residuals versus the predicted yields and versus each of the five factors. Comment on the plots.
+
+The plot of residual versus exposure time shows some very slight inequality of variance.  There is no strong evidence of a potential problem.
+
+```{r, echo = FALSE}
+data1$residuals <- resid(m2)
+for (factor in c( "Exposure.Time")){
+  plot_title <- sprintf("Residuals vs. %s", factor)
+  fig <- data1 %>% ggplot(aes_string(x = factor, y = "residuals")) + geom_point() + ggtitle(plot_title)
+  
+  print(fig)
+}
+
+```
+
+
+---
+
+(f)	Interpret any significant interactions.
+
+```{r, echo = FALSE, out.height=500}
+interaction.plot(x.factor = data1$Exposure.Time,
+                 trace.factor = data1$Aperture,
+                 response = data1$Yield,
+                 fun = mean, 
+                 ylab = "Yield",
+                 xlab = "Exposure Time",
+                 col = c("red", "blue"),
+                 trace.label = "Aperture")
+```
+
+Factor A (Aperture) does not have as large an effect when B (Exposure.Time) is at its low level (-20) as it does when B is at its high level (20).
+
+---
+
+(g)	What are your recommendations regarding process operating conditions?
+
+
+To achieve the highest yield:
+
+ - Effect of B is positive: run B at the high level.
+ - For AC, from interaction plot, we should both run at high level.
+
+---
+
+#### 7.3
+
+Consider the data from the first replicate of Problem 6.5.  Suppose that these observations could not all be run using the same bar stock.  Set up a design to run these observations in two blocks of four observations each with ABC confounded.  Analyze the data.
+
+```{r}
+library(knitr)
+data2 <-data.frame(
+  A = rep(c(-1,1),times = 4),
+  B = rep(rep(c(-1,1),each = 2), times = 2),
+  C = rep(c(-1,1), each = 4),
+  label = c("1","a","b","ab","c","ac","bc","abc"),
+  result = c(22,32,35,55,44,40,60,39)
+)
+kable(data2)
+```
+
+---
+
+Design:
+```{r, echo = FALSE}
+block_design <- data.frame(block1 = c("1","ab","ac","bc"), block2 = c("a","b","c","abc"))
+kable(block_design)
+```
+
+---
+
+```{r, echo=FALSE}
+daniel_plot <- function(effects, p = c(0.3, 0.7)) { 
+  qq <- qqnorm(effects, datax = TRUE)
+  qqline(effects, col = "red", probs = p, datax = TRUE)
+  text(qq$x, qq$y, names(effects), pos=1)
+}
+```
+
+```{r, out.height=390}
+data2$block <- c(1, 2, 2, 1, 2, 1, 1, 2)
+m3 <- lm(result ~ A * B * C + block, data = data2)
+
+effects <- 2 * coef(m3)[-1]
+daniel_plot(effects)
+```
+
+From the normal probability plot of effects, B, C, and the AC interaction are significant.  Factor A was included in the analysis of variance to preserve hierarchy.
+
+---
+
+```{r}
+m4 <- lm(result ~ A * C + B+ block, data = data2)
+anova(m4)
+```
+
+This design identifies the same significant factors as Problem 6.5.
+
+
+

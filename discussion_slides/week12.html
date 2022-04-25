@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>week12.knit</title>
+    <meta charset="utf-8" />
+    <script src="libs/header-attrs-2.13/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/xaringan-themer.css" type="text/css" />
+    <link rel="stylesheet" href="cols.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+#### 6.24
+
+An experiment was run in a semiconductor fabrication plant in an effort to increase yield.  Five factors, each at two levels, were studied.  The factors (and levels) were A = aperture setting (small, large), B = exposure time (20% below nominal, 20% above nominal), C = development time (30 s, 45 s), D = mask dimension (small, large), and E = etch time (14.5 min, 15.5 min).  The unreplicated 25 design was run. Results are saved in data1.csv.
+
+(a)	Construct a normal probability plot of the effect estimates.  Which effects appear to be large?
+
+(b)	Fit the model that includes only the terms you think are different than zero from (a). Conduct an analysis of variance to confirm your findings for part (a).
+
+(c)	Write down the regression model relating yield to the significant process variables.
+
+(d)	Plot the residuals on normal probability paper.  Is the plot satisfactory?
+
+(e)	Plot the residuals versus the predicted yields and versus each of the five factors. Comment on the plots.
+
+(f)	Interpret any significant interactions.
+
+(g)	What are your recommendations regarding process operating conditions?
+
+---
+
+
+```r
+library(tidyverse)
+data1 &lt;- read.csv("data1.csv")
+head(data1)
+```
+
+```
+##   Aperture Exposure.Time Develop.Time Mask.Dimension Etch.Time Yield
+## 1    small           -20           30          Small      14.5     7
+## 2    large           -20           30          Small      14.5     9
+## 3    small            20           30          Small      14.5    34
+## 4    large            20           30          Small      14.5    55
+## 5    small           -20           45          Small      14.5    16
+## 6    large           -20           45          Small      14.5    20
+```
+
+---
+
+Encode the factor level by -1 and 1:
+
+
+```r
+library(tidyverse)
+data1 &lt;- read.csv("data1.csv")
+data1 &lt;- data1 %&gt;% mutate(
+  A = ifelse(Aperture == "small", -1, 1),
+  B = ifelse(Exposure.Time == -20, -1, 1),
+  C = ifelse(Develop.Time == 30, -1, 1),
+  D = ifelse(Mask.Dimension == "Small", -1, 1),
+  E = ifelse(Etch.Time == 14.5, -1, 1)
+)
+head(data1)
+```
+
+```
+##   Aperture Exposure.Time Develop.Time Mask.Dimension Etch.Time Yield  A  B  C
+## 1    small           -20           30          Small      14.5     7 -1 -1 -1
+## 2    large           -20           30          Small      14.5     9  1 -1 -1
+## 3    small            20           30          Small      14.5    34 -1  1 -1
+## 4    large            20           30          Small      14.5    55  1  1 -1
+## 5    small           -20           45          Small      14.5    16 -1 -1  1
+## 6    large           -20           45          Small      14.5    20  1 -1  1
+##    D  E
+## 1 -1 -1
+## 2 -1 -1
+## 3 -1 -1
+## 4 -1 -1
+## 5 -1 -1
+## 6 -1 -1
+```
+
+
+---
+
+
+```r
+m &lt;- lm(Yield ~ A * B * C * D * E, data = data1)
+effects &lt;- 2 * coef(m)[-1]
+
+daniel_plot &lt;- function(effects, p = c(0.3, 0.7)) { 
+  qq &lt;- qqnorm(effects, datax = TRUE)
+  qqline(effects, col = "red", probs = p, datax = TRUE)
+  text(qq$x, qq$y, names(effects), pos=1)
+}
+daniel_plot(effects)
+```
+
+![](week12_files/figure-html/unnamed-chunk-3-1.png)&lt;!-- --&gt;
+
+From the normal probability plot of effects shown below, effects A, B, C, and the AB interaction appear to be large.
+
+---
+
+(b)	Fit the model that includes only the terms you think are different than zero from (a). Conduct an analysis of variance to confirm your findings for part (a).
+
+
+```r
+m2 &lt;- lm(Yield ~ Aperture + Exposure.Time + Develop.Time + Aperture*Exposure.Time, data = data1)
+anova(m2)
+```
+
+```
+## Analysis of Variance Table
+## 
+## Response: Yield
+##                        Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## Aperture                1 1116.3  1116.3  382.27 &lt; 2.2e-16 ***
+## Exposure.Time           1 9214.0  9214.0 3155.34 &lt; 2.2e-16 ***
+## Develop.Time            1  750.8   750.8  257.10 2.534e-15 ***
+## Aperture:Exposure.Time  1  504.0   504.0  172.61 3.038e-13 ***
+## Residuals              27   78.8     2.9                      
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+Effects A, B, C, and the AB interaction are significant, which agrees with the conclusion in (a).
+
+---
+
+(c)	Write down the regression model relating yield to the significant process variables.
+
+
+```r
+coef(m2)
+```
+
+```
+##                 (Intercept)               Aperturesmall 
+##                  12.2187500                 -11.8125000 
+##               Exposure.Time                Develop.Time 
+##                   1.0468750                   0.6458333 
+## Aperturesmall:Exposure.Time 
+##                  -0.3968750
+```
+
+The model is
+$$
+`\begin{aligned}
+Yield = &amp;12.2187500 - 11.8125000*I(Aperture = small) + 1.0468750 *Exposure.Time \\
+&amp;-0.3968750 *I(Aperture = small) *Exposure.Time + 0.6458333*Develop.Time
+\end{aligned}`
+$$
+
+When aperture is small, the model can be simplified as:
+$$
+`\begin{aligned}
+ Yield &amp;= 12.2187500  -11.8125000 + 1.0468750 *Exposure.Time -0.3968750 *Exposure.Time +  0.6458333*Develop.Time\\
+ &amp;=0.40625+0.6500*Exposure.Time+0.6458333*Develop.Time
+\end{aligned}`
+$$
+
+When aperture is large, the model can be simplified as:
+
+$$
+Yield = 12.2187500  +1.0468750 *Exposure.Time  +  0.6458333*Develop.Time
+$$
+
+
+---
+
+(d)	Plot the residuals on normal probability paper.  Is the plot satisfactory?
+
+![](week12_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+
+There is nothing unusual about this plot.
+
+
+---
+
+(e)	Plot the residuals versus the predicted yields and versus each of the five factors. Comment on the plots.
+
+The plot of residual versus exposure time shows some very slight inequality of variance.  There is no strong evidence of a potential problem.
+
+![](week12_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+
+---
+
+(f)	Interpret any significant interactions.
+
+&lt;img src="week12_files/figure-html/unnamed-chunk-8-1.png" height="500" /&gt;
+
+Factor A (Aperture) does not have as large an effect when B (Exposure.Time) is at its low level (-20) as it does when B is at its high level (20).
+
+---
+
+(g)	What are your recommendations regarding process operating conditions?
+
+
+To achieve the highest yield:
+
+ - Effect of B is positive: run B at the high level.
+ - For AC, from interaction plot, we should both run at high level.
+
+---
+
+#### 7.3
+
+Consider the data from the first replicate of Problem 6.5.  Suppose that these observations could not all be run using the same bar stock.  Set up a design to run these observations in two blocks of four observations each with ABC confounded.  Analyze the data.
+
+
+```r
+library(knitr)
+data2 &lt;-data.frame(
+  A = rep(c(-1,1),times = 4),
+  B = rep(rep(c(-1,1),each = 2), times = 2),
+  C = rep(c(-1,1), each = 4),
+  label = c("1","a","b","ab","c","ac","bc","abc"),
+  result = c(22,32,35,55,44,40,60,39)
+)
+kable(data2)
+```
+
+
+
+|  A|  B|  C|label | result|
+|--:|--:|--:|:-----|------:|
+| -1| -1| -1|1     |     22|
+|  1| -1| -1|a     |     32|
+| -1|  1| -1|b     |     35|
+|  1|  1| -1|ab    |     55|
+| -1| -1|  1|c     |     44|
+|  1| -1|  1|ac    |     40|
+| -1|  1|  1|bc    |     60|
+|  1|  1|  1|abc   |     39|
+
+---
+
+Design:
+
+|block1 |block2 |
+|:------|:------|
+|1      |a      |
+|ab     |b      |
+|ac     |c      |
+|bc     |abc    |
+
+---
+
+
+
+
+```r
+data2$block &lt;- c(1, 2, 2, 1, 2, 1, 1, 2)
+m3 &lt;- lm(result ~ A * B * C + block, data = data2)
+
+effects &lt;- 2 * coef(m3)[-1]
+daniel_plot(effects)
+```
+
+&lt;img src="week12_files/figure-html/unnamed-chunk-12-1.png" height="390" /&gt;
+
+From the normal probability plot of effects, B, C, and the AC interaction are significant.  Factor A was included in the analysis of variance to preserve hierarchy.
+
+---
+
+
+```r
+m4 &lt;- lm(result ~ A * C + B+ block, data = data2)
+anova(m4)
+```
+
+```
+## Analysis of Variance Table
+## 
+## Response: result
+##           Df Sum Sq Mean Sq F value  Pr(&gt;F)  
+## A          1   3.13    3.13  0.1020 0.77967  
+## C          1 190.13  190.13  6.2082 0.13032  
+## B          1 325.13  325.13 10.6163 0.08268 .
+## block      1  91.12   91.12  2.9755 0.22668  
+## A:C        1 378.13  378.13 12.3469 0.07232 .
+## Residuals  2  61.25   30.63                  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+This design identifies the same significant factors as Problem 6.5.
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="cols_macro.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

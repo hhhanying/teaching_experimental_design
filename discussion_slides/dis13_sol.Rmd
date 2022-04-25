@@ -1,0 +1,130 @@
+---
+title: "Week13"
+output: html_document
+---
+```{r, message=F, warning=F, echo=F}
+library(tidyverse)
+library(knitr)
+```
+
+# 4.25
+
+An industrial engineer is investigating the effect of four assembly methods (A, B, C, D) on the assembly time for a color television component.  Four operators are selected for the study.  Furthermore, the engineer knows that each assembly method produces such fatigue that the time required for the last assembly may be greater than the time required for the first, regardless of the method.  That is, a trend develops in the required assembly time.  To account for this source of variability, the engineer uses the Latin square design shown below.  Analyze the data from this experiment ( = 0.05) draw appropriate conclusions.
+
+Calculate this question manually.
+
+
+Some summarized statistics:
+```{r, echo = FALSE}
+dat <- read.csv("dat425.csv", sep = '\t')
+m1 = dat %>% group_by(Method) %>% summarise(sum(Time))
+m2 = dat %>% group_by(Operator) %>% summarise(sum(Time))
+m3 = dat %>% group_by(Order) %>% summarise(sum(Time))
+kable(t(m1), caption = "Sum of time for different methods")
+kable(t(m2), caption = "Column sum")
+kable(t(m3), caption = "Row sum")
+s1 = sum(dat$Time)
+s2 = sum(dat$Time ** 2)
+print(sprintf("Sum of time is %s.", s1))
+print(sprintf("Sum of time square is %s.", s2))
+```
+
+## Solution
+### Calculate SS
+
+$$
+\begin{aligned}
+SS_{Treatments} &= \frac 1 p \sum_{j = 1}^p y_{\cdot j \cdot}^2 - \frac{y_{\cdot \cdot}^2}{N} \\
+&= \frac {30^2 + 37 ^2 + 53^2 + 44^2}{4} - \frac{164^2}{16}\\
+&= 72.5
+\end{aligned} 
+$$
+
+
+$$
+\begin{aligned}
+SS_{Rows} &= \frac 1 p \sum_{i = 1}^p y_{i \cdot  \cdot}^2 - \frac{y_{\cdot \cdot}^2}{N} \\
+&= \frac { 39^2 +  44^2 + 35^2 + 46^2}{4} - \frac{164^2}{16}\\
+&= 18.5
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+SS_{Columns} &= \frac 1 p \sum_{k = 1}^p y_{\cdot  \cdot k}^2 - \frac{y_{\cdot \cdot}^2}{N} \\
+&= \frac { 32^2 +  52^2 + 41^2 + 39^2}{4} - \frac{164^2}{16} \\
+&= 51.5
+\end{aligned} 
+$$
+
+$$
+\begin{aligned}
+SS_{T} &=\sum_{i,j,k} y_{ijk}^2 -\frac{y_{\cdot \cdot}^2} {N} \\
+&= 1834 - \frac{164^2}{16}\\
+&=153
+\end{aligned} 
+$$
+
+$$
+\begin{aligned}
+SS_{E} &= SS{T} -SS_{Treatments} - SS_{Rows} - SS_{Columns}\\
+&=153-72.5-51.5-18.5\\
+&=10.5
+\end{aligned}
+$$
+
+### Calculate df
+
+$$
+df_{Treatments} = df_{Rows} = df_{Columns} = p-1 = 3
+$$
+
+
+$df_{E} = (p-2)(p-1)=6$
+
+Or
+
+$df_{T} = N - 1 = p^2-1 = 16-1=15$
+
+$df{E} = df_{T} -df_{Treatments} - df_{Rows}- df_{Columns}=6$
+
+```{r}
+aov_t <- data.frame(factor = c("Treatments", "Order", "Operator", "Error"),
+                    SS = c(72.5, 51.5, 18.5, 10.5),
+                    df = c(3,3,3,6))
+kable(aov_t)
+```
+
+### Calculate MS
+
+MSx = SSx / dfx, where x can be treatment, block, error...
+
+```{r, echo = F}
+aov_t$MS <- aov_t$SS / aov_t$df
+kable(aov_t)
+```
+
+### Calculate F test statistic and p value
+```{r}
+aov_t$F <- aov_t$MS / aov_t$MS[4]
+aov_t$F[4] <- NA
+kable(aov_t)
+```
+
+### Calculate p value
+```{r}
+aov_t$p <- pf(aov_t$F, df1 = aov_t$df, df2 = aov_t$df[4], lower.tail = FALSE)
+kable(aov_t)
+```
+
+Method and Operator are significant.
+
+
+### Check with R
+```{r}
+dat <- read.csv("dat425.csv", sep = '\t')
+m <- lm(Time ~ Method + factor(Order) + factor(Operator), data = dat)
+anova(m)
+```
+
+The results are the same.
